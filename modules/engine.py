@@ -1,39 +1,26 @@
 import google.generativeai as genai
-
-def get_best_model():
-    """현재 API 키에서 실제로 작동하는 모델을 직접 조회하여 찾습니다."""
-    try:
-        models = [
-            m.name for m in genai.list_models() 
-            if 'generateContent' in m.supported_generation_methods
-        ]
-        # 3.0이나 최신 flash 모델을 최우선으로 찾음
-        for target in ['gemini-3.0-flash', 'gemini-2.0-flash', 'flash', 'pro']:
-            for m in models:
-                if target in m:
-                    return m
-        if models:
-            return models[0]
-    except Exception:
-        pass
-    return "models/gemini-3.0-flash"
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_tokens):
     genai.configure(api_key=api_key.strip())
     
-    # 실제로 존재하는 모델 이름 자동 장착
-    model_name = get_best_model()
+    safety = {
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    }
     
+    # 에러 안내문에 명시된 최신 모델명으로 변경
     model = genai.GenerativeModel(
-        model_name=model_name,
-        system_instruction=system_prompt if system_prompt else None
+        model_name="gemini-3.8-flash",
+        system_instruction=system_prompt
     )
     
-    # 전체 대화 문맥 구성
-    contents = []
-    for msg in messages:
+    history = []
+    for msg in messages[:-1]:
         role = "model" if msg["role"] == "assistant" else "user"
-        contents.append({"role": role, "parts": [msg["content"]]})
+        history.append({"role": role, "parts": [msg["content"]]})
         
     config = genai.types.GenerationConfig(
         temperature=temp,
@@ -41,11 +28,14 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
         max_output_tokens=max_tokens
     )
     
-    # 버그가 잦은 start_chat 대신 가장 확실한 generate_content 직접 호출
-    response = model.generate_content(
-        contents,
+    chat = model.start_chat(history=history)
+    current_message = messages[-1]["content"]
+    
+    response = chat.send_message(
+        current_message,
         generation_config=config,
+        safety_settings=safety,
         stream=True
     )
     
-    return response, model_name
+    return response
