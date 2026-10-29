@@ -59,16 +59,16 @@ if user_input:
             st.error(filtered_input)
         st.stop()
         
-    # AI 답변 실시간 출력
+    # AI 답변 실시간 출력 (로딩 스피너 및 스트리밍 적용)
     with st.chat_message("assistant"):
         try:
-            # 504 방지용 진짜 스트리밍 호출
             stream_response = get_gemini_response(
                 API_KEY, st.session_state.messages, sys_prompt, temp, top_p, max_tokens
             )
             
-            # Streamlit 내장 함수로 실시간 렌더링 (타자기 효과)
-            full_response = st.write_stream(chunk.text for chunk in stream_response)
+            # 빈 화면 멈춤 방지: 답변이 출력될 때까지 로딩 스피너를 함께 표시
+            with st.spinner("AI가 답변을 생성 중입니다..."):
+                full_response = st.write_stream(chunk.text for chunk in stream_response)
             
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
