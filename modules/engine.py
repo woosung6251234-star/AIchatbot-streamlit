@@ -5,7 +5,7 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
     
     # 404 에러를 피해 성공적으로 연결되었던 모델로 고정
     model = genai.GenerativeModel(
-        model_name="gemini-3.8-flash",
+        model_name="gemini-pro",
         system_instruction=system_prompt
     )
     
