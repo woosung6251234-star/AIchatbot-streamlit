@@ -12,7 +12,7 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
     }
     
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-1.5-flash-8b",
         system_instruction=system_prompt
     )
     
