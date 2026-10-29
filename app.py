@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import time
 from modules.security import run_security_scan
 from modules.engine import get_gemini_response
 
@@ -31,8 +30,6 @@ with st.sidebar:
     
     temp = st.slider("Temperature", 0.0, 2.0, 0.7, 0.1)
     top_p = st.slider("Top-P", 0.0, 1.0, 0.9, 0.05)
-    
-    # 💡 글자 잘림 현상을 막기 위해 기본값을 2048로 넉넉하게 복구했습니다.
     max_tokens = st.number_input("Max Tokens", min_value=100, max_value=8192, value=2048)
     
     if st.button("새 대화 시작", use_container_width=True):
@@ -62,22 +59,18 @@ if user_input:
             st.error(filtered_input)
         st.stop()
         
+    # AI 답변 실시간 출력
     with st.chat_message("assistant"):
         try:
-            # 로딩 스피너 표시
-            with st.spinner("AI가 답변을 생성 중입니다..."):
-                full_text = get_gemini_response(
-                    API_KEY, st.session_state.messages, sys_prompt, temp, top_p, max_tokens
-                )
+            # 504 방지용 진짜 스트리밍 호출
+            stream_response = get_gemini_response(
+                API_KEY, st.session_state.messages, sys_prompt, temp, top_p, max_tokens
+            )
             
-            # 인공 타자기 효과 적용
-            def simulated_stream():
-                for word in full_text.split(" "):
-                    yield word + " "
-                    time.sleep(0.02)
-                    
-            st.write_stream(simulated_stream)
-            st.session_state.messages.append({"role": "assistant", "content": full_text})
+            # Streamlit 내장 함수로 실시간 렌더링 (타자기 효과)
+            full_response = st.write_stream(chunk.text for chunk in stream_response)
+            
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
             
         except Exception as e:
             st.error(f"⚠️ 상세 오류 원인: {e}")
