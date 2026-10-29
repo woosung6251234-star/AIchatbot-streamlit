@@ -11,8 +11,9 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
         HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
     }
     
+    # 🚨 유령 모델(3.8)을 삭제하고 구글 공식 권장 모델로 정상화
     model = genai.GenerativeModel(
-        model_name="gemini-3.8-flash",
+        model_name="gemini-1.5-flash",
         system_instruction=system_prompt
     )
     
@@ -30,13 +31,12 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
     chat = model.start_chat(history=history)
     current_message = messages[-1]["content"]
     
-    # stream=False 로 변경하여 한 번에 답변을 받음
+    # 다시 타자기 효과(스트리밍)를 켜서 1초 만에 글자가 찍히도록 복구
     response = chat.send_message(
         current_message,
         generation_config=config,
         safety_settings=safety,
-        stream=False 
+        stream=True 
     )
     
-    # 텍스트 결과값만 바로 반환
-    return response.text
+    return response
