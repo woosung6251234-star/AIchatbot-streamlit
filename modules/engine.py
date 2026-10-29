@@ -1,9 +1,16 @@
 import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_tokens):
     genai.configure(api_key=api_key.strip())
     
-    # 무조건 작동이 확인된 3.8-flash 모델로 고정
+    safety = {
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    }
+    
     model = genai.GenerativeModel(
         model_name="gemini-3.8-flash",
         system_instruction=system_prompt
@@ -21,12 +28,15 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
     )
     
     chat = model.start_chat(history=history)
+    current_message = messages[-1]["content"]
     
-    # stream=True로 설정하여 서버 통신 강제 종료(504 에러)를 방지하고 실시간으로 데이터를 받아옴
+    # stream=False 로 변경하여 한 번에 답변을 받음
     response = chat.send_message(
-        messages[-1]["content"],
+        current_message,
         generation_config=config,
-        stream=True
+        safety_settings=safety,
+        stream=False 
     )
     
-    return response
+    # 텍스트 결과값만 바로 반환
+    return response.text
