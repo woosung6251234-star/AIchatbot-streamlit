@@ -1,1 +1,7 @@
-
+/* 사이드바 깔끔하게 */
+[data-testid="stSidebar"] { border-right: 1px solid #E5E7EB; }
+/* 상단 기본 메뉴(점 3개) 숨기기 */
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+/* 채팅 말풍선 모던 디자인 */
+.stChatMessage { border-radius: 8px; padding: 1rem; }
