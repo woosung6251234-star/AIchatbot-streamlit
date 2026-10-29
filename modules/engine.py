@@ -11,7 +11,6 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
         HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
     }
     
-    # 에러 안내문에 명시된 최신 모델명으로 변경
     model = genai.GenerativeModel(
         model_name="gemini-3.8-flash",
         system_instruction=system_prompt
@@ -31,11 +30,13 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
     chat = model.start_chat(history=history)
     current_message = messages[-1]["content"]
     
+    # stream=False 로 변경하여 한 번에 답변을 받음
     response = chat.send_message(
         current_message,
         generation_config=config,
         safety_settings=safety,
-        stream=True
+        stream=False 
     )
     
-    return response
+    # 텍스트 결과값만 바로 반환
+    return response.text
