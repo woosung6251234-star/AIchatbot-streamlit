@@ -1,16 +1,9 @@
 import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_tokens):
     genai.configure(api_key=api_key.strip())
     
-    safety = {
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-    }
-    
+    # 404 에러를 피해 성공적으로 연결되었던 모델로 고정
     model = genai.GenerativeModel(
         model_name="gemini-3.8-flash",
         system_instruction=system_prompt
@@ -28,15 +21,13 @@ def get_gemini_response(api_key, messages, system_prompt, temp, top_p, max_token
     )
     
     chat = model.start_chat(history=history)
-    current_message = messages[-1]["content"]
     
-    # stream=False 로 변경하여 한 번에 답변을 받음
+    # 무한 재시도를 끄고, 기존 연산 속도(2분 이상)를 고려해 타임아웃을 240초로 넉넉하게 연장
     response = chat.send_message(
-        current_message,
+        messages[-1]["content"],
         generation_config=config,
-        safety_settings=safety,
-        stream=False 
+        stream=False,
+        request_options={"retry": None, "timeout": 240} 
     )
     
-    # 텍스트 결과값만 바로 반환
     return response.text
